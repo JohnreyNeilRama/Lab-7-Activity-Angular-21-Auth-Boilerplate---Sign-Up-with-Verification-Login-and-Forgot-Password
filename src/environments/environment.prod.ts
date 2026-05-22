@@ -1,4 +1,4 @@
 export const environment = {
     production: true,
-    apiUrl: 'http://localhost:4000'
+    apiUrl: 'https://lab-6-activity-building-a-node-js-tu44.onrender.com'
 };
