@@ -20,6 +20,9 @@ export class ResetPasswordComponent implements OnInit {
     form!: FormGroup;
     loading = false;
     submitted = false;
+    validatingMessage = 'Validating token...';
+    private retryCount = 0;
+    private maxRetries = 3;
 
     constructor(
         private formBuilder: FormBuilder,
@@ -37,20 +40,43 @@ export class ResetPasswordComponent implements OnInit {
             validator: MustMatch('password', 'confirmPassword')
         });
 
+        // Grab token BEFORE navigating away
         const token = this.route.snapshot.queryParams['token'];
 
-        // remove token from url to prevent http referer leakage
+        if (!token) {
+            this.tokenStatus = TokenStatus.Invalid;
+            return;
+        }
+
+        // Store token first, then remove from URL
+        this.token = token;
         this.router.navigate([], { relativeTo: this.route, replaceUrl: true });
+
+        this.validateToken(token);
+    }
+
+    private validateToken(token: string) {
+        this.validatingMessage = this.retryCount === 0
+            ? 'Validating token...'
+            : `Server is waking up, please wait... (attempt ${this.retryCount + 1}/${this.maxRetries + 1})`;
 
         this.accountService.validateResetToken(token)
             .pipe(first())
             .subscribe({
                 next: () => {
-                    this.token = token;
                     this.tokenStatus = TokenStatus.Valid;
                 },
-                error: () => {
-                    this.tokenStatus = TokenStatus.Invalid;
+                error: (err) => {
+                    // Retry on network/timeout errors (Render cold start) up to maxRetries times
+                    const isNetworkError = !err?.status || err?.status === 0 || err?.status >= 500;
+                    if (isNetworkError && this.retryCount < this.maxRetries) {
+                        this.retryCount++;
+                        this.validatingMessage = `Server is waking up, please wait... (attempt ${this.retryCount + 1}/${this.maxRetries + 1})`;
+                        // Wait 15 seconds before retrying (gives Render time to spin up)
+                        setTimeout(() => this.validateToken(token), 15000);
+                    } else {
+                        this.tokenStatus = TokenStatus.Invalid;
+                    }
                 }
             });
     }
