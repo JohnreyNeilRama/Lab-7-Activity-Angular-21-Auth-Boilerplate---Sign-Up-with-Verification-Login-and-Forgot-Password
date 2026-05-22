@@ -3,16 +3,12 @@ import { BrowserModule } from '@angular/platform-browser';
 import { ReactiveFormsModule } from '@angular/forms';
 import { HttpClientModule, HTTP_INTERCEPTORS } from '@angular/common/http';
 
-// used to create fake backend
-import { fakeBackendProvider } from './_helpers';
-
 import { AppRoutingModule } from './app-routing.module';
 import { JwtInterceptor, ErrorInterceptor, appInitializer } from './_helpers';
 import { AccountService } from './_services';
 import { AppComponent } from './app.component';
 import { AlertComponent } from './_components';
 import { HomeComponent } from './home';
-import { environment } from '../environments/environment';
 
 @NgModule({
     imports: [
@@ -31,8 +27,7 @@ import { environment } from '../environments/environment';
         { provide: HTTP_INTERCEPTORS, useClass: JwtInterceptor, multi: true },
         { provide: HTTP_INTERCEPTORS, useClass: ErrorInterceptor, multi: true },
 
-        // provider used to create fake backend — disabled in production
-        ...(!environment.production ? [fakeBackendProvider] : [])
+        // Fake backend removed — using real backend (Render + filess.io)
     ],
     bootstrap: [AppComponent]
 })
