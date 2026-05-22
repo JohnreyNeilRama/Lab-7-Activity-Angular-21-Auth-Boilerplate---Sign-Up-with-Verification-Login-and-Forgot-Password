@@ -72,7 +72,7 @@ export class ResetPasswordComponent implements OnInit {
                     this.cdr.detectChanges();
                 },
                 error: (err) => {
-                    const isNetworkError = !err?.status || err?.status === 0 || err?.status >= 500;
+                    const isNetworkError = err !== 'Invalid token';
                     if (isNetworkError && this.retryCount < this.maxRetries) {
                         this.retryCount++;
                         this.validatingMessage = `Server is waking up, please wait... (attempt ${this.retryCount + 1}/${this.maxRetries + 1})`;
