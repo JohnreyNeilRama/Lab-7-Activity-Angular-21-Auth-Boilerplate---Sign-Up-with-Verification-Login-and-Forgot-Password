@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { Router, ActivatedRoute } from '@angular/router';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { first } from 'rxjs/operators';
@@ -29,7 +29,8 @@ export class ResetPasswordComponent implements OnInit {
         private route: ActivatedRoute,
         private router: Router,
         private accountService: AccountService,
-        private alertService: AlertService
+        private alertService: AlertService,
+        private cdr: ChangeDetectorRef
     ) { }
 
     ngOnInit() {
@@ -45,6 +46,7 @@ export class ResetPasswordComponent implements OnInit {
 
         if (!token) {
             this.tokenStatus = TokenStatus.Invalid;
+            this.cdr.detectChanges();
             return;
         }
 
@@ -60,22 +62,25 @@ export class ResetPasswordComponent implements OnInit {
             ? 'Validating token...'
             : `Server is waking up, please wait... (attempt ${this.retryCount + 1}/${this.maxRetries + 1})`;
 
+        this.cdr.detectChanges();
+
         this.accountService.validateResetToken(token)
             .pipe(first())
             .subscribe({
                 next: () => {
                     this.tokenStatus = TokenStatus.Valid;
+                    this.cdr.detectChanges();
                 },
                 error: (err) => {
-                    // Retry on network/timeout errors (Render cold start) up to maxRetries times
                     const isNetworkError = !err?.status || err?.status === 0 || err?.status >= 500;
                     if (isNetworkError && this.retryCount < this.maxRetries) {
                         this.retryCount++;
                         this.validatingMessage = `Server is waking up, please wait... (attempt ${this.retryCount + 1}/${this.maxRetries + 1})`;
-                        // Wait 15 seconds before retrying (gives Render time to spin up)
+                        this.cdr.detectChanges();
                         setTimeout(() => this.validateToken(token), 15000);
                     } else {
                         this.tokenStatus = TokenStatus.Invalid;
+                        this.cdr.detectChanges();
                     }
                 }
             });
@@ -106,6 +111,7 @@ export class ResetPasswordComponent implements OnInit {
                 error: error => {
                     this.alertService.error(error);
                     this.loading = false;
+                    this.cdr.detectChanges();
                 }
             });
     }
